@@ -2,14 +2,16 @@ ERL = /usr/bin/erl
 APPS = kernel stdlib erts eunit
 COMBO_PLT = $(HOME)/.dialyzer_plt
 
-all: compile
+all: compile shell
 
-compile:
+compile: clean
 	$(ERL) -make
 
-shell:
-	./ebin/iniciar
-	$(ERL) -pa ./ebin
+shell:  
+	gnome-terminal -x $(ERL) -sname nodeA -setcookie clave -run peer start -pa ./ebin
+	gnome-terminal -x $(ERL) -sname nodeB -setcookie clave -run peer start -pa ./ebin
+	gnome-terminal -x $(ERL) -sname nodeC -setcookie clave -run peer start -pa ./ebin
+	gnome-terminal -x $(ERL) -sname nodeD -setcookie clave -run initEscenario start -pa ./ebin
 
 clean:
 	rm -rf ebin/*.*
