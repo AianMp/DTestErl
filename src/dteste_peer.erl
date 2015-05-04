@@ -68,20 +68,10 @@ loopPeer() ->
 %%--------------------------------------------------------------------
 work({_, Pid, {N,{M, F, A}}})->
     io:format(user,"[INFO]          DTestE.Peer->Run Test....~n",[]),
-						%timer:sleep(random:uniform(20000)),  
-						%io:format(user,"param1: ~p~n", [{node(),M,F,A}]),
-						%R = rpc:call(node(),M, F, A),
-						%R = F(),
-						%io:format(user,"[INFO]          DTestT.Peer->The result is: ~p~n", [R]),
-						%case R of
-						%	{error, Reason} -> 
-						%	    Pid ! {error, self(), node(), N, {M,F,A}, {badrpc, Reason}};
-						%	Res ->
-						%	    Pid ! {ok,self(), node(), N, {M,F,A},Res}
-						%    end.
+    	       
     try
 	F()
-    of R->
+    of R ->
 	    Pid ! {ok, self(), node(), N, {M,F,A}, {ok,R}}
     catch
 	{eunit_internal, Term} ->
@@ -89,6 +79,11 @@ work({_, Pid, {N,{M, F, A}}})->
 	Class:Reason ->
 	    Pid ! {error, self(), node(), N, {M,F,A}, {error,{Class, Reason}}}
     end.
+    
+
+    %R = rpc:call(node(),M,F,[]),
+    %io:format(user,"**************RESULT:~p~n***************",[R]),
+    %Pid ! {ok, self(), node(), N, {M,F,A}, {ok,R}}.
 
 %%--------------------------------------------------------------------
 %% @doc Stop a peer.

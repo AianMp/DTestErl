@@ -19,18 +19,59 @@
 -module(dteste_eunit).
 
 %% PUBLIC API
--export([test/2]).
+-export([test/2, loopEunit/1, run/0]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% -Inicia y registra un nuevo proceso con nombre "pid_eunit", en caso de que exista devuelve el Pid. Este proceso será un daemon que encolará los Tests que EUnit quiera ejecutar.
+%% @end
+%%--------------------------------------------------------------------
+getPid()->
+    case whereis(pid_eunit) of
+    	undefined -> 
+	    register(pid_eunit,spawn(dteste_eunit,loopEunit, [[]]));
+	Pid ->
+	    Pid
+    end.
+	 
+%%--------------------------------------------------------------------
+%% @doc
+%% -Añade cada Test que EUnit quiere ejecutar en una lista, cuando EUnit termina llama al cliente pasandole la lista.
+%% @end
+%%--------------------------------------------------------------------
+loopEunit(TestList) ->
+    receive
+	{add, Test} ->
+	    loopEunit([Test|TestList]);
+	{run}->
+	    %print_title(),
+	    dteste_client:request(TestList)
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc 
 %% -Inicia la integración de EUnit con DTestE, recive el test de EUnit y se lo pasa al componente cliente.
 %% @end
 %%--------------------------------------------------------------------
-test(F, Info)->
-    io:format(user,"[INFO]          **DTestE**~n",[]),
+test(Fun, Info)->
+    %io:format(user,"[INFO]          **DTestE**~n",[]),
     M = proplists:get_value(module, Info),
-    R = dteste_client:request([{M,F,[]}]),
-    io:format(user,"*********************************************~n",[]),
-    io:format(user,"*****   Dtest.Euxfnit->The Result is:~p   ***~n",[R]),
-    io:format(user,"*********************************************~n",[]),
-    R.
+    %F = proplists:get_value(name, Info),
+    %io:format(user,"is atom~p~n",[is_atom(F)]),
+    getPid(),
+    {pid_eunit, node()} ! {add, {M,Fun,[]}}.
+    %R = dteste_client:request([{M,F,[]}]),
+    %io:format(user,"*********************************************~n",[]),
+    %io:format(user,"*****   Dtest.Euxfnit->The Result is:~p   ***~n",[R]),
+    %io:format(user,"*********************************************~n",[]),
+    %R.
+
+run()->
+    {pid_eunit, node()} ! {run}.
+
+%print_title()->
+%    io:format(user,"      ****************************************************************************      ~n",[]),
+%    io:format(user,"      *                                                                          *      ~n",[]),
+%    io:format(user,"      *                                   DTestE                                 *      ~n",[]),
+%    io:format(user,"      *                                                                          *      ~n",[]),
+%    io:format(user,"      ****************************************************************************      ~n",[]).

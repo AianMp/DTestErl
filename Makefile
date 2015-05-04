@@ -5,16 +5,17 @@ COMBO_PLT = $(HOME)/.dialyzer_plt
 all: compile shell
 
 compile: clean
+	mkdir ./ebin
 	$(ERL) -make
 
 shell:  
-	gnome-terminal -x $(ERL) -sname nodeA -setcookie clave -run peer start -pa ./ebin
-	gnome-terminal -x $(ERL) -sname nodeB -setcookie clave -run peer start -pa ./ebin
-	gnome-terminal -x $(ERL) -sname nodeC -setcookie clave -run peer start -pa ./ebin
-	gnome-terminal -x $(ERL) -sname nodeD -setcookie clave -run initEscenario start -pa ./ebin
+	gnome-terminal -x $(ERL) -sname nodeA -setcookie clave -run dteste_peer start -pa ./ebin
+	gnome-terminal -x $(ERL) -sname nodeB -setcookie clave -run dteste_peer start -pa ./ebin
+	gnome-terminal -x $(ERL) -sname nodeC -setcookie clave -run dteste_peer start -pa ./ebin
+	gnome-terminal -x $(ERL) -sname nodeD -setcookie clave -run dteste_initEscenario start -pa ./ebin
 
 clean:
-	rm -rf ebin/*.*
+	rm -rf ebin/
 	rm -rf doc/*.html
 	rm -rf doc/edoc-info doc/erlang.png doc/stylesheet.css
 

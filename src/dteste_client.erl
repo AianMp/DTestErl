@@ -32,7 +32,7 @@
 %% @end
 %%--------------------------------------------------------------------
 request(TaskList)->
-    io:format(user,"[INFO]     DTestE.Client->New Request!~n",[]),
+    %io:format(user,"[INFO]     DTestE.Client->New Request!~n",[]),
     spawn(fun()->client(TaskList) end).
 
 %%--------------------------------------------------------------------
@@ -77,11 +77,11 @@ auxPing([H|T], NodeList)->
     {pid_peer, H}!{ping,self(),node()},
     receive
 	{pong,_,Node} ->
-	    io:format(user,"[INFO]     DTestE.Client->Node ~p available!~n",[Node]),
+	    %io:format(user,"[INFO]     DTestE.Client->Node ~p available!~n",[Node]),
 	    auxPing(T,[Node|NodeList])
     after 
 	1000 ->
-	    io:format(user,"[WARNING]  DTestE.Client->Node ~p NOT available!~n", [H]),
+	    %io:format(user,"[WARNING]  DTestE.Client->Node ~p NOT available!~n", [H]),
 	    auxPing(T,NodeList)
     end.
 
@@ -108,7 +108,7 @@ send([])->
     ok;
 send([{Num,Task,Node}|T])->
     {pid_peer, Node} ! {self(), node(),{Num ,Task}},
-    io:format(user,"[INFO]     DTestE.Client->Task has been sent to node: ~p~n",[{Node, Num,Task}]),
+    %io:format(user,"[INFO]     DTestE.Client->Task has been sent to node: ~p~n",[{Node, Num,Task}]),
     send(T).
 
 %%--------------------------------------------------------------------
@@ -121,13 +121,13 @@ send([{Num,Task,Node}|T])->
 loopClient(Results) ->
     receive
 	{error, _, Node, Num, Task, R}->
-	    io:format(user,"[FAIL]     DTestE.Client->Has received a {error} of the task ~p~n",[Num]),
-	    io:format(user," in node ~p~n",[Node]),
-	    loopClient([{{Num,Task,Node},R}|Results]);
+	    %io:format(user,"[FAIL]     DTestE.Client->Has received a {error} of the task ~p~n",[Num]),
+	    %io:format(user," in node ~p~n",[Node]),
+	    loopClient([{{Num,Task,Node},{error,R}}|Results]);
 	{ok, _, Node, Num, Task, R}->
-	    io:format(user,"[INFO]     DTestE.Client->Has received a {ok} of the task ~p~n",[Num]),
-	    io:format(user," in node ~p~n",[Node]),
-	    loopClient([{{Num,Task,Node},R}|Results]);
+	    %io:format(user,"[INFO]     DTestE.Client->Has received a {ok} of the task ~p~n",[Num]),
+	    %io:format(user," in node ~p~n",[Node]),
+	    loopClient([{{Num,Task,Node},{ok,R}}|Results]);
 	{stop} ->
 	    io:format(user,"[END LOOP]~n",[])    
     after 2000 ->
@@ -145,13 +145,14 @@ controller(Results)->
     TaskRun = lists:subtract(TaskNodeList,getTaskNodeList(Results)),
     case TaskRun of
 	[]->
-	    io:format(user,"~n***********The client ends!************~n",[]),
-	    %print(Results),
+	    %io:format(user,"~n***********The client ends!************~n",[]),
+	    print_header(),
+	    print(Results, 0, 0),
 	    self() ! {stop};
 	L  ->
 	    TaskError = active(L),
 	    put('taskNodeList', lists:subtract(get('taskNodeList'),TaskError)),
-	    io:format(user,"[WARNING]  DTestE.Client->Lost ~p tasks~n", [length(TaskError)]),
+	    %io:format(user,"[WARNING]  DTestE.Client->Lost ~p tasks~n", [length(TaskError)]),
 	    case TaskError of
 		[] ->
 		    loopClient(Results);
@@ -199,8 +200,52 @@ auxActive(TaskError,[{Num, Task, Node}|T])->
 	    auxActive([{Num,Task,Node}|TaskError], T)
     end.  
 
-%print([])->
-%    ok;
-%print([H|T])->
-%    io:format(user,"Task done ->~n ~p ~n", [H]),
-%    print(T).
+print_header() ->
+    print_newLine(),
+    print_title(),
+    print_newLine(),
+    print_subTitle(),
+    print_newLine().
+
+print_line() ->
+    io:format(user,"________________________________________________________________________________________~n",[]).
+
+print_newLine()->
+    io:format(user,"                                                                                        ~n",[]).
+
+print_title()->
+    io:format(user,"      ****************************************************************************      ~n",[]),
+    io:format(user,"      *                                                                          *      ~n",[]),
+    io:format(user,"      *                                   DTestE                                 *      ~n",[]),
+    io:format(user,"      *                                                                          *      ~n",[]),
+    io:format(user,"      ****************************************************************************      ~n",[]).
+
+print_subTitle()->
+    io:format(user,"*********************************      Test Summary      *******************************~n",[]).
+    
+print_numT(NumT)->    
+    io:format(user,"     NumT:    ~p~n",[NumT]).
+print_node(Node)->
+    io:format(user,"     Node:    ~p~n",[Node]).
+print_module(Module)->
+    io:format(user,"     Module:  ~p~n",[Module]).
+print_status(Status)->
+    io:format(user,"     Status:  ~p~n",[Status]).
+print_result(Result)->
+    io:format(user,"     Result:  ~p~n",[Result]).
+
+print([],NumPassed, NumFail)->
+    print_newLine(),
+    io:format(user,"     Overall ~p PASSED and ",[NumPassed]),
+    io:format(user,"~p FAIL~n",[NumFail]);
+print([{{Num,{M,_,[]},Node},{S, R}}|T],NumPassed,NumFail)->
+    print_numT(Num),
+    print_node(Node),
+    print_module(M),
+    print_status(S),
+    print_result(R),
+    print_line(),
+    case S of
+	ok-> print(T, NumPassed + 1, NumFail);
+	error->print(T,NumPassed, NumFail + 1)
+    end.
